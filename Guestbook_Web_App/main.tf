@@ -1,6 +1,6 @@
 # VPC
 resource "aws_vpc" "VPC" {
-  cidr_block                       = "10.0.0.0/27"
+  cidr_block                       = "10.0.0.0/26"
   instance_tenancy                 = "default"
   assign_generated_ipv6_cidr_block = false
 
@@ -94,5 +94,51 @@ resource "aws_instance" "web_server_2" {
   tags = {
     Name    = "Web-Server-2"
     project = var.project_tag
+  }
+}
+
+# Security Group for RDS DB Instance 
+resource "aws_security_group" "RDS_security_group" {
+  name        = "RDSStorageGroup"
+  description = "TBD"
+  vpc_id      = aws_vpc.VPC.id
+
+  tags = {
+    Name    = "RDSStorageGroup"
+    project = var.project_tag
+  }
+}
+
+# Subnet 1 for RDS DB Instance
+resource "aws_subnet" "RDS_storage1" {
+  vpc_id            = aws_vpc.VPC.id
+  availability_zone = "us-east-1a"
+  cidr_block        = "10.0.0.32/28"
+
+  tags = {
+    Name    = "Guestbook-RDS-1"
+    project = var.project_tag
+  }
+}
+
+# Subnet 2 for RDS DB Instance
+resource "aws_subnet" "RDS_storage2" {
+  vpc_id            = aws_vpc.VPC.id
+  availability_zone = "us-east-1b"
+  cidr_block        = "10.0.0.48/28"
+
+  tags = {
+    Name    = "Guestbook-RDS-2"
+    project = var.project_tag
+  }
+}
+
+# Subnet Group for RDS DB Instance
+resource "aws_db_subnet_group" "RDS_db_subnet_group" {
+  name       = "guestbook-db-subnet-group"
+  subnet_ids = [aws_subnet.RDS_storage1.id, aws_subnet.RDS_storage2.id]
+
+  tags = {
+    Name = "Guestbook-DB-Subnet-Group"
   }
 }

@@ -13,7 +13,7 @@ resource "aws_vpc" "VPC" {
 # Subnet for EC2 Group 1
 resource "aws_subnet" "EC2_web1" {
   vpc_id            = aws_vpc.VPC.id
-  availability_zone = "us-east-1a"
+  availability_zone = var.az_1
   cidr_block        = "10.0.0.0/28"
 
   tags = {
@@ -25,7 +25,7 @@ resource "aws_subnet" "EC2_web1" {
 # Subnet for EC2 Group 2
 resource "aws_subnet" "EC2_web2" {
   vpc_id            = aws_vpc.VPC.id
-  availability_zone = "us-east-1b"
+  availability_zone = var.az_2
   cidr_block        = "10.0.0.16/28"
 
   tags = {
@@ -112,7 +112,7 @@ resource "aws_security_group" "RDS_security_group" {
 # Subnet 1 for RDS DB Instance
 resource "aws_subnet" "RDS_storage1" {
   vpc_id            = aws_vpc.VPC.id
-  availability_zone = "us-east-1a"
+  availability_zone = var.az_1
   cidr_block        = "10.0.0.32/28"
 
   tags = {
@@ -124,7 +124,7 @@ resource "aws_subnet" "RDS_storage1" {
 # Subnet 2 for RDS DB Instance
 resource "aws_subnet" "RDS_storage2" {
   vpc_id            = aws_vpc.VPC.id
-  availability_zone = "us-east-1b"
+  availability_zone = var.az_2
   cidr_block        = "10.0.0.48/28"
 
   tags = {
@@ -139,6 +139,31 @@ resource "aws_db_subnet_group" "RDS_db_subnet_group" {
   subnet_ids = [aws_subnet.RDS_storage1.id, aws_subnet.RDS_storage2.id]
 
   tags = {
-    Name = "Guestbook-DB-Subnet-Group"
+    Name    = "Guestbook-DB-Subnet-Group"
+    project = var.project_tag
+  }
+}
+
+# RDS DB Instance
+resource "aws_db_instance" "guestbook_rds_db" {
+  engine                     = "mysql"
+  engine_version             = "8.0.35"
+  db_name                    = "mydb"
+  multi_az                   = false
+  identifier                 = "guestbook-db"
+  username                   = var.db_username
+  password                   = var.db_password
+  instance_class             = "db.t3.micro"
+  storage_type               = "gp2"
+  allocated_storage          = 20
+  db_subnet_group_name       = aws_db_subnet_group.RDS_db_subnet_group.name
+  publicly_accessible        = false
+  vpc_security_group_ids     = [aws_security_group.RDS_security_group.id]
+  availability_zone          = var.az_1
+  storage_encrypted          = true
+  auto_minor_version_upgrade = true
+  skip_final_snapshot        = true
+  tags = {
+    project = var.project_tag
   }
 }

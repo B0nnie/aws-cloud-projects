@@ -46,6 +46,18 @@ resource "aws_security_group" "EC2_security_group" {
   }
 }
 
+# Security Group Rules for EC2s
+resource "aws_vpc_security_group_ingress_rule" "http" {
+  security_group_id = aws_security_group.EC2_security_group.id
+  cidr_ipv4   = "24.30.14.170/32"  #"0.0.0.0/0"
+  from_port   = 80
+  ip_protocol = "tcp"
+  to_port     = 80
+   tags = {
+    Name    = "HTTP"
+   }
+}
+
 # EC2 instances for web server
 data "aws_ami" "amazon_linux_2023" {
   owners             = ["amazon"]
@@ -167,3 +179,25 @@ resource "aws_db_instance" "guestbook_rds_db" {
     project = var.project_tag
   }
 }
+
+resource "aws_route53_zone" "primary" {
+  name = "guestbook.csr4w.com"
+  comment = "Used for Guestbook Web App. DNS for subdomain is managed here. Main domain is managed elsewhere."
+
+  tags = {
+    project = var.project_tag
+  }
+}
+
+/* resource "aws_route53_record" "a_record" {
+  zone_id = aws_route53_zone.primary.zone_id
+  name    = "guestbook.csr4w.com"
+  type    = "A"
+
+  alias {
+    name                   = 
+    zone_id                = 
+    evaluate_target_health = true
+  }
+} */
+

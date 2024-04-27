@@ -180,6 +180,7 @@ resource "aws_db_instance" "guestbook_rds_db" {
   }
 }
 
+# Route 53 resources
 resource "aws_route53_zone" "primary" {
   name = "guestbook.csr4w.com"
   comment = "Used for Guestbook Web App. DNS for subdomain is managed here. Main domain is managed elsewhere."
@@ -201,3 +202,11 @@ resource "aws_route53_zone" "primary" {
   }
 } */
 
+# Internet Gateway
+resource "aws_internet_gateway" "internet_gateway" {
+  vpc_id = aws_vpc.VPC.id
+
+  tags = {
+    Name = "main"
+  }
+}

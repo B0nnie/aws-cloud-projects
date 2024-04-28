@@ -15,6 +15,7 @@ resource "aws_subnet" "EC2_web1" {
   vpc_id            = aws_vpc.VPC.id
   availability_zone = var.az_1
   cidr_block        = "10.0.0.0/28"
+  map_public_ip_on_launch = true
 
   tags = {
     Name    = "Guestbook-Web-1"
@@ -209,4 +210,24 @@ resource "aws_internet_gateway" "internet_gateway" {
   tags = {
     Name = "main"
   }
+}
+
+# Route Table resources
+resource "aws_route_table" "public_route_table" {
+  vpc_id = aws_vpc.VPC.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.internet_gateway.id
+  }
+
+  tags = {
+    Name = "guestbookapp_public_route_table"
+    project = var.project_tag
+  }
+}
+
+resource "aws_route_table_association" "public_subnet_association" {
+  subnet_id      = aws_subnet.EC2_web1.id
+  route_table_id = aws_route_table.public_route_table.id
 }

@@ -191,17 +191,13 @@ resource "aws_route53_zone" "primary" {
   }
 }
 
-/* resource "aws_route53_record" "a_record" {
+resource "aws_route53_record" "a_record" {
   zone_id = aws_route53_zone.primary.zone_id
   name    = "guestbook.csr4w.com"
   type    = "A"
-
-  alias {
-    name                   = 
-    zone_id                = 
-    evaluate_target_health = true
-  }
-} */
+  ttl     = 300
+  records = [aws_instance.web_server_1.public_ip]
+} 
 
 # Internet Gateway
 resource "aws_internet_gateway" "internet_gateway" {

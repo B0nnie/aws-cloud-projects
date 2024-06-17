@@ -12,9 +12,10 @@ resource "aws_vpc" "VPC" {
 
 # Subnet for EC2 Group 1
 resource "aws_subnet" "EC2_web1" {
-  vpc_id            = aws_vpc.VPC.id
-  availability_zone = var.az_1
-  cidr_block        = "10.0.0.0/28"
+  vpc_id                  = aws_vpc.VPC.id
+  availability_zone       = var.az_1
+  cidr_block              = "10.0.0.0/28"
+  map_public_ip_on_launch = true
 
   tags = {
     Name    = "Guestbook-Web-1"
@@ -49,13 +50,13 @@ resource "aws_security_group" "EC2_security_group" {
 # Security Group Rules for EC2s
 resource "aws_vpc_security_group_ingress_rule" "http" {
   security_group_id = aws_security_group.EC2_security_group.id
-  cidr_ipv4   = "24.30.14.170/32"  #"0.0.0.0/0"
-  from_port   = 80
-  ip_protocol = "tcp"
-  to_port     = 80
-   tags = {
-    Name    = "HTTP"
-   }
+  cidr_ipv4         = "24.30.14.170/32" #"0.0.0.0/0"
+  from_port         = 80
+  ip_protocol       = "tcp"
+  to_port           = 80
+  tags = {
+    Name = "HTTP"
+  }
 }
 
 # EC2 instances for web server
@@ -182,7 +183,7 @@ resource "aws_db_instance" "guestbook_rds_db" {
 
 # Route 53 resources
 resource "aws_route53_zone" "primary" {
-  name = "guestbook.csr4w.com"
+  name    = "guestbook.csr4w.com"
   comment = "Used for Guestbook Web App. DNS for subdomain is managed here. Main domain is managed elsewhere."
 
   tags = {
@@ -190,17 +191,23 @@ resource "aws_route53_zone" "primary" {
   }
 }
 
-/* resource "aws_route53_record" "a_record" {
+resource "aws_route53_record" "a_record" {
   zone_id = aws_route53_zone.primary.zone_id
   name    = "guestbook.csr4w.com"
   type    = "A"
+  ttl     = 300
+  records = [aws_eip.elastic_ip.public_ip]
+}
 
-  alias {
-    name                   = 
-    zone_id                = 
-    evaluate_target_health = true
+# Elastic IP resources
+resource "aws_eip" "elastic_ip" {
+  instance = aws_instance.web_server_1.id
+  domain   = "vpc"
+
+  tags = {
+    project = var.project_tag
   }
-} */
+}
 
 # Internet Gateway
 resource "aws_internet_gateway" "internet_gateway" {
@@ -209,4 +216,24 @@ resource "aws_internet_gateway" "internet_gateway" {
   tags = {
     Name = "main"
   }
+}
+
+# Route Table resources
+resource "aws_route_table" "public_route_table" {
+  vpc_id = aws_vpc.VPC.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.internet_gateway.id
+  }
+
+  tags = {
+    Name    = "guestbookapp_public_route_table"
+    project = var.project_tag
+  }
+}
+
+resource "aws_route_table_association" "public_subnet_association" {
+  subnet_id      = aws_subnet.EC2_web1.id
+  route_table_id = aws_route_table.public_route_table.id
 }

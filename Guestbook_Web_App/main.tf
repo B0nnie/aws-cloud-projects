@@ -50,7 +50,7 @@ resource "aws_security_group" "EC2_security_group" {
 # Security Group Rules for EC2s
 resource "aws_vpc_security_group_ingress_rule" "http" {
   security_group_id = aws_security_group.EC2_security_group.id
-  cidr_ipv4         = "24.30.14.170/32" #"0.0.0.0/0"
+  cidr_ipv4         = "0.0.0.0/0"
   from_port         = 80
   ip_protocol       = "tcp"
   to_port           = 80
@@ -60,35 +60,24 @@ resource "aws_vpc_security_group_ingress_rule" "http" {
 }
 
 # EC2 instances for web server
-data "aws_ami" "amazon_linux_2023" {
-  owners             = ["amazon"]
-  include_deprecated = false
-
-  filter {
-    name   = "name"
-    values = ["al2023-ami-2023.4.20240319.1-kernel-6.1-x86_64"]
-  }
-
-  filter {
-    name   = "root-device-type"
-    values = ["ebs"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
+resource "aws_ami_copy" "amazon_linux_copy" {
+  name              = "amazon-linux-2-v1.0"
+  source_ami_id     = "ami-0166fe664262f664c"
+  source_ami_region = "us-east-1"
+  description       = "Amazon Linux 2 v1.0"
+  tags = {
+    Version = "v1.0"
+    project = var.project_tag
   }
 }
 
 resource "aws_instance" "web_server_1" {
-  ami                         = data.aws_ami.amazon_linux_2023.id
+  ami                         = aws_ami_copy.amazon_linux_copy.id
   instance_type               = "t2.micro"
   subnet_id                   = aws_subnet.EC2_web1.id
   vpc_security_group_ids      = [aws_security_group.EC2_security_group.id]
   key_name                    = var.key_name
   associate_public_ip_address = true
-  #user_data = file("")
-
   tags = {
     Name    = "Web-Server-1"
     project = var.project_tag
@@ -96,17 +85,39 @@ resource "aws_instance" "web_server_1" {
 }
 
 resource "aws_instance" "web_server_2" {
-  ami                         = data.aws_ami.amazon_linux_2023.id
+  ami                         = aws_ami_copy.amazon_linux_copy.id
   instance_type               = "t2.micro"
   subnet_id                   = aws_subnet.EC2_web2.id
   vpc_security_group_ids      = [aws_security_group.EC2_security_group.id]
   key_name                    = var.key_name
   associate_public_ip_address = true
-  #user_data = file("")
-
   tags = {
     Name    = "Web-Server-2"
     project = var.project_tag
+  }
+}
+
+# Security Group for Ansible 
+resource "aws_security_group" "Ansible_security_group" {
+  name        = "Ansible-SG"
+  description = "Ansible-SG"
+  vpc_id      = aws_vpc.VPC.id
+
+  tags = {
+    Name    = "AnsibleSG"
+    project = var.project_tag
+  }
+}
+
+# Security Group Rules for Ansible
+resource "aws_vpc_security_group_ingress_rule" "http_ansible" {
+  security_group_id = aws_security_group.Ansible_security_group.id
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 80
+  ip_protocol       = "tcp"
+  to_port           = 80
+  tags = {
+    Name = "HTTP"
   }
 }
 

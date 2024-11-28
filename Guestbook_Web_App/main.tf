@@ -35,21 +35,21 @@ resource "aws_subnet" "EC2_web2" {
   }
 }
 
-# Security Group for EC2s
-resource "aws_security_group" "EC2_security_group" {
+# Security Group for Web Server EC2s
+resource "aws_security_group" "web_server_security_group" {
   name        = "WebServerGroup"
-  description = "TBD"
+  description = "Security group for web servers"
   vpc_id      = aws_vpc.VPC.id
-
+  
   tags = {
     Name    = "WebServerGroup"
     project = var.project_tag
   }
 }
 
-# Security Group Rules for EC2s
-resource "aws_vpc_security_group_ingress_rule" "http" {
-  security_group_id = aws_security_group.EC2_security_group.id
+# Security Group Rules for Web Server EC2s
+resource "aws_vpc_security_group_ingress_rule" "http_web_servers" {
+  security_group_id = aws_security_group.web_server_security_group.id
   cidr_ipv4         = "0.0.0.0/0"
   from_port         = 80
   ip_protocol       = "tcp"
@@ -59,7 +59,7 @@ resource "aws_vpc_security_group_ingress_rule" "http" {
   }
 }
 
-# EC2 instances for web server
+# EC2 instances for web server 
 resource "aws_ami_copy" "amazon_linux_copy" {
   name              = "amazon-linux-2-v1.0"
   source_ami_id     = "ami-0166fe664262f664c"
@@ -75,7 +75,7 @@ resource "aws_instance" "web_server_1" {
   ami                         = aws_ami_copy.amazon_linux_copy.id
   instance_type               = "t2.micro"
   subnet_id                   = aws_subnet.EC2_web1.id
-  vpc_security_group_ids      = [aws_security_group.EC2_security_group.id]
+  vpc_security_group_ids      = [aws_security_group.web_server_security_group.id]
   key_name                    = var.key_name
   associate_public_ip_address = true
   tags = {
@@ -88,7 +88,7 @@ resource "aws_instance" "web_server_2" {
   ami                         = aws_ami_copy.amazon_linux_copy.id
   instance_type               = "t2.micro"
   subnet_id                   = aws_subnet.EC2_web2.id
-  vpc_security_group_ids      = [aws_security_group.EC2_security_group.id]
+  vpc_security_group_ids      = [aws_security_group.web_server_security_group.id]
   key_name                    = var.key_name
   associate_public_ip_address = true
   tags = {
@@ -97,8 +97,10 @@ resource "aws_instance" "web_server_2" {
   }
 }
 
-# Security Group for Ansible 
-resource "aws_security_group" "Ansible_security_group" {
+# Subnet for Jump Server
+
+# Security Group for Jump Server 
+resource "aws_security_group" "jump_server_security_group" {
   name        = "Ansible-SG"
   description = "Ansible-SG"
   vpc_id      = aws_vpc.VPC.id
@@ -107,19 +109,20 @@ resource "aws_security_group" "Ansible_security_group" {
     Name    = "AnsibleSG"
     project = var.project_tag
   }
-}
+} 
 
-# Security Group Rules for Ansible
-resource "aws_vpc_security_group_ingress_rule" "http_ansible" {
-  security_group_id = aws_security_group.Ansible_security_group.id
-  cidr_ipv4         = "0.0.0.0/0"
-  from_port         = 80
-  ip_protocol       = "tcp"
-  to_port           = 80
+# EC2 instance for Jump Server
+/*resource "aws_instance" "jump_server" {
+  ami                         = aws_ami_copy.amazon_linux_copy.id
+  instance_type               = "t2.micro"
+  subnet_id                   = aws_subnet.EC2_web2.id
+  vpc_security_group_ids      = [aws_security_group.jump_server_security_group.id]
+  associate_public_ip_address = false
   tags = {
-    Name = "HTTP"
+    Name    = "Jump-Server"
+    project = var.project_tag
   }
-}
+}*/
 
 # Security Group for RDS DB Instance 
 resource "aws_security_group" "RDS_security_group" {
